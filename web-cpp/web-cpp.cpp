@@ -1,7 +1,12 @@
-﻿#include "bigdec/bigdec.hpp"
+﻿#include "web/http_server/http_server.hpp"
+#include "bigdec/bigdec.hpp"
 #include "json/json.hpp"
 
-int main() {//
+#include <pqxx/pqxx>
+
+
+int main() {
 	tests::RunBigDecimalTests(false);
-	tests::RunJsonTests(false);
+	tests::RunJsonTests(true);
+	tests::RunHttpServerTests(true);
 }

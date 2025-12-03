@@ -103,10 +103,13 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)deps\libpqxx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)deps\libpqxx\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>pqxx.lib;libecpg_compat.lib;libecpg.lib;libpgtypes.lib;libpq.lib;libpgcommon.lib;libpgport.lib;libcrypto.lib;libssl.lib;lz4.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -118,10 +121,14 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)deps\libpqxx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)deps\libpqxx\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>pqxx.lib;libecpg_compat.lib;libecpg.lib;libpgtypes.lib;libpq.lib;libpgcommon.lib;libpgport.lib;libcrypto.lib;libssl.lib;lz4.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -129,10 +136,15 @@
     <ClCompile Include="json\json.cpp" />
     <ClCompile Include="json\json_tests.cpp" />
     <ClCompile Include="web-cpp.cpp" />
+    <ClCompile Include="web\http_server\http_server.cpp" />
+    <ClCompile Include="web\http_server\http_server_tests.cpp" />
+    <ClCompile Include="web\tcp_server\tcp_server.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bigdec\bigdec.hpp" />
     <ClInclude Include="json\json.hpp" />
+    <ClInclude Include="web\http_server\http_server.hpp" />
+    <ClInclude Include="web\tcp_server\tcp_server.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
