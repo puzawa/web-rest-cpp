@@ -65,6 +65,11 @@ std::string JsonValue::to_string(const JsonValue& v) {
 		else if constexpr (std::is_same_v<T, bool>) {
 			return arg ? "true" : "false";
 		}
+		else if constexpr (std::is_same_v<T, long long>) {  
+			std::ostringstream oss;
+			oss << arg;
+			return oss.str();
+		}
 		else if constexpr (std::is_same_v<T, double>) {
 			std::ostringstream oss;
 			oss << std::setprecision(17) << arg;

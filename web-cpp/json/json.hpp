@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <string>
 #include <variant>
 #include <vector>
@@ -28,13 +28,14 @@ enum class JsonType {
 struct JsonValue {
 	using array = std::vector<JsonValue>;
 	using object = std::unordered_map<std::string, JsonValue>;
-	using variant_t = std::variant<std::nullptr_t, bool, double, std::string, array, object>;
+	using variant_t = std::variant<std::nullptr_t, bool, long long, double, std::string, array, object>;
 
 	variant_t value;
 
 	JsonValue() : value(nullptr) {}
 	JsonValue(std::nullptr_t) : value(nullptr) {}
 	JsonValue(bool b) : value(b) {}
+	JsonValue(long long i) : value(i) {}
 	JsonValue(double d) : value(d) {}
 	JsonValue(const std::string& s) : value(s) {}
 	JsonValue(std::string&& s) : value(std::move(s)) {}
@@ -51,6 +52,7 @@ struct JsonValue {
 	JsonType type() const {
 		if (std::holds_alternative<std::nullptr_t>(value)) return JsonType::Null;
 		if (std::holds_alternative<bool>(value))          return JsonType::Bool;
+		if (std::holds_alternative<long long>(value))     return JsonType::Number;
 		if (std::holds_alternative<double>(value))        return JsonType::Number;
 		if (std::holds_alternative<std::string>(value))   return JsonType::String;
 		if (std::holds_alternative<array>(value))         return JsonType::Array;
@@ -177,9 +179,17 @@ private:
 				throw std::runtime_error("Invalid number");
 			while (pos < s.size() && std::isdigit(static_cast<unsigned char>(s[pos]))) ++pos;
 		}
-		double value = std::strtod(s.c_str() + start, nullptr);
-		return JsonValue(value);
+
+		std::string num_str = s.substr(start, pos - start);
+		if (num_str.find_first_of(".eE") == std::string::npos) {
+			long long iv = std::strtoll(num_str.c_str(), nullptr, 10);
+			return JsonValue(iv);
+		}
+
+		double dv = std::strtod(s.c_str() + start, nullptr);
+		return JsonValue(dv);
 	}
+
 
 	JsonValue parse_string() {
 		if (get() != '"') throw std::runtime_error("Expected opening quote for string");
@@ -323,6 +333,11 @@ public:
 				throw std::runtime_error("JsonObjectView::get<double>: wrong type for '" + key + "'");
 			return std::get<double>(val.value);
 		}
+		else if constexpr (std::is_same_v<T, long long>) {
+			if (!std::holds_alternative<long long>(val.value))
+				throw std::runtime_error("JsonObjectView::get<long long>: wrong type for '" + key + "'");
+			return std::get<long long>(val.value);
+		}
 		else if constexpr (std::is_same_v<T, std::string>) {
 			if (!std::holds_alternative<std::string>(val.value))
 				throw std::runtime_error("JsonObjectView::get<string>: wrong type for '" + key + "'");
@@ -346,6 +361,10 @@ public:
 		}
 	}
 
+
+	const JsonValue& cJsonVal() const {
+		return this->v_;
+	}
 	template<typename T>
 	std::optional<T> get_optional(const std::string& key) const {
 		const auto& obj = std::get<JsonValue::object>(v_.value);
@@ -404,6 +423,11 @@ public:
 	void set(const std::string& key, bool b) {
 		auto& obj = std::get<JsonValue::object>(v_.value);
 		obj[key] = JsonValue(b);
+	}
+
+	void set(const std::string& key, long long i) {
+		auto& obj = std::get<JsonValue::object>(v_.value);
+		obj[key] = JsonValue(i);
 	}
 
 	void set(const std::string& key, double d) {
