@@ -1,10 +1,13 @@
-#pragma once
+﻿#pragma once
 
 #include <vector>
 #include <string>
 #include <algorithm>
 #include <stdexcept>
 #include <cctype>
+#include <sstream>
+#include <iomanip>
+#include <cmath>
 
 namespace tests {
 	int RunBigDecimalTests(bool verbose);
@@ -39,6 +42,10 @@ public:
 		}
 	}
 
+	explicit BigDecimal(double v)
+		: BigDecimal(fromDouble(v)) {
+	}
+
 	friend BigDecimal operator+(const BigDecimal& a, const BigDecimal& b) {
 		BigDecimal r = a;
 		r += b;
@@ -57,6 +64,13 @@ public:
 
 	friend BigDecimal operator/(const BigDecimal& a, const BigDecimal& b) {
 		return divide(a, b, 20);
+	}
+
+	BigDecimal operator-() const {
+		BigDecimal r = *this;
+		if (!r.isZero())
+			r.negative = !r.negative;
+		return r;
 	}
 
 	BigDecimal& operator+=(const BigDecimal& other) {
@@ -116,6 +130,52 @@ public:
 		return s;
 	}
 
+
+	friend bool operator==(const BigDecimal& a, const BigDecimal& b) {
+		return compare(a, b) == 0;
+	}
+	friend bool operator!=(const BigDecimal& a, const BigDecimal& b) {
+		return compare(a, b) != 0;
+	}
+	friend bool operator<(const BigDecimal& a, const BigDecimal& b) {
+		return compare(a, b) < 0;
+	}
+	friend bool operator<=(const BigDecimal& a, const BigDecimal& b) {
+		return compare(a, b) <= 0;
+	}
+	friend bool operator>(const BigDecimal& a, const BigDecimal& b) {
+		return compare(a, b) > 0;
+	}
+	friend bool operator>=(const BigDecimal& a, const BigDecimal& b) {
+		return compare(a, b) >= 0;
+	}
+
+	friend bool operator==(const BigDecimal& a, long long b) { return a == BigDecimal(b); }
+	friend bool operator==(long long a, const BigDecimal& b) { return BigDecimal(a) == b; }
+	friend bool operator!=(const BigDecimal& a, long long b) { return !(a == b); }
+	friend bool operator!=(long long a, const BigDecimal& b) { return !(a == b); }
+	friend bool operator<(const BigDecimal& a, long long b) { return a < BigDecimal(b); }
+	friend bool operator<(long long a, const BigDecimal& b) { return BigDecimal(a) < b; }
+	friend bool operator<=(const BigDecimal& a, long long b) { return a <= BigDecimal(b); }
+	friend bool operator<=(long long a, const BigDecimal& b) { return BigDecimal(a) <= b; }
+	friend bool operator>(const BigDecimal& a, long long b) { return a > BigDecimal(b); }
+	friend bool operator>(long long a, const BigDecimal& b) { return BigDecimal(a) > b; }
+	friend bool operator>=(const BigDecimal& a, long long b) { return a >= BigDecimal(b); }
+	friend bool operator>=(long long a, const BigDecimal& b) { return BigDecimal(a) >= b; }
+
+	friend bool operator==(const BigDecimal& a, double b) { return a == BigDecimal(b); }
+	friend bool operator==(double a, const BigDecimal& b) { return BigDecimal(a) == b; }
+	friend bool operator!=(const BigDecimal& a, double b) { return !(a == b); }
+	friend bool operator!=(double a, const BigDecimal& b) { return !(a == b); }
+	friend bool operator<(const BigDecimal& a, double b) { return a < BigDecimal(b); }
+	friend bool operator<(double a, const BigDecimal& b) { return BigDecimal(a) < b; }
+	friend bool operator<=(const BigDecimal& a, double b) { return a <= BigDecimal(b); }
+	friend bool operator<=(double a, const BigDecimal& b) { return BigDecimal(a) <= b; }
+	friend bool operator>(const BigDecimal& a, double b) { return a > BigDecimal(b); }
+	friend bool operator>(double a, const BigDecimal& b) { return BigDecimal(a) > b; }
+	friend bool operator>=(const BigDecimal& a, double b) { return a >= BigDecimal(b); }
+	friend bool operator>=(double a, const BigDecimal& b) { return BigDecimal(a) >= b; }
+
 private:
 	std::vector<int> digits;
 	bool negative;
@@ -128,11 +188,10 @@ private:
 
 		std::string s;
 		size_t start = 0, end = str.size();
-		while (start < end && std::isspace(static_cast<unsigned char>(str[start]))) ++start;
-		while (end > start && std::isspace(static_cast<unsigned char>(str[end - 1]))) --end;
-		if (start >= end) {
-			throw std::invalid_argument("Empty numeric string");
-		}
+		while (start < end && std::isspace((unsigned char)str[start])) ++start;
+		while (end > start && std::isspace((unsigned char)str[end - 1])) --end;
+		if (start >= end) throw std::invalid_argument("Empty numeric string");
+
 		s = str.substr(start, end - start);
 
 		if (s[0] == '+' || s[0] == '-') {
@@ -140,9 +199,7 @@ private:
 			s.erase(s.begin());
 		}
 
-		if (s.empty()) {
-			throw std::invalid_argument("Empty numeric string after sign");
-		}
+		if (s.empty()) throw std::invalid_argument("Empty numeric string after sign");
 
 		size_t dotPos = s.find('.');
 		if (dotPos != std::string::npos) {
@@ -152,22 +209,15 @@ private:
 			scale = static_cast<int>(s.size() - dotPos - 1);
 			s.erase(dotPos, 1);
 		}
-		else {
-			scale = 0;
-		}
 
 		bool hasDigit = false;
 		for (char c : s) {
-			if (c < '0' || c > '9') {
+			if (c < '0' || c > '9')
 				throw std::invalid_argument("Invalid character in numeric string");
-			}
 			digits.push_back(c - '0');
 			hasDigit = true;
 		}
-
-		if (!hasDigit) {
-			throw std::invalid_argument("No digits in numeric string");
-		}
+		if (!hasDigit) throw std::invalid_argument("No digits in numeric string");
 
 		size_t firstNonZero = 0;
 		while (firstNonZero < digits.size() && digits[firstNonZero] == 0)
@@ -179,10 +229,9 @@ private:
 			negative = false;
 		}
 		else if (firstNonZero > 0) {
-			digits.erase(digits.begin(), digits.begin() + static_cast<long>(firstNonZero));
+			digits.erase(digits.begin(), digits.begin() + (long)firstNonZero);
 		}
 	}
-
 
 	void trimLeadingZeros() {
 		size_t firstNonZero = 0;
@@ -194,7 +243,7 @@ private:
 			negative = false;
 		}
 		else if (firstNonZero > 0) {
-			digits.erase(digits.begin(), digits.begin() + static_cast<long>(firstNonZero));
+			digits.erase(digits.begin(), digits.begin() + (long)firstNonZero);
 		}
 	}
 
@@ -223,6 +272,35 @@ private:
 		return 0;
 	}
 
+	static int compare(const BigDecimal& a, const BigDecimal& b) {
+		if (a.negative != b.negative) {
+			if (a.isZero() && b.isZero()) return 0;
+			return a.negative ? -1 : 1;
+		}
+
+		BigDecimal lhs = a;
+		BigDecimal rhs = b;
+
+		alignScales(lhs, rhs);
+
+		lhs.trimLeadingZeros();
+		rhs.trimLeadingZeros();
+
+		int cmp = compareAbs(lhs, rhs);
+		return a.negative ? -cmp : cmp;
+	}
+
+
+	static BigDecimal fromDouble(double v) {
+		if (std::isnan(v) || std::isinf(v))
+			throw std::invalid_argument("Cannot convert NaN or Inf to BigDecimal");
+
+		std::ostringstream oss;
+		oss.setf(std::ios::fixed);
+		oss << std::setprecision(15) << v;
+		return BigDecimal(oss.str());
+	}
+
 	static void padLeft(std::vector<int>& a, std::vector<int>& b) {
 		if (a.size() < b.size()) {
 			a.insert(a.begin(), b.size() - a.size(), 0);
@@ -237,9 +315,10 @@ private:
 		std::vector<int> rb = b;
 		padLeft(ra, rb);
 
-		int n = static_cast<int>(ra.size());
+		int n = (int)ra.size();
 		std::vector<int> res(n);
 		int carry = 0;
+
 		for (int i = n - 1; i >= 0; --i) {
 			int sum = ra[i] + rb[i] + carry;
 			res[i] = sum % 10;
@@ -254,9 +333,10 @@ private:
 		std::vector<int> rb = b;
 		padLeft(ra, rb);
 
-		int n = static_cast<int>(ra.size());
+		int n = (int)ra.size();
 		std::vector<int> res(n);
 		int borrow = 0;
+
 		for (int i = n - 1; i >= 0; --i) {
 			int diff = ra[i] - rb[i] - borrow;
 			if (diff < 0) {
@@ -273,20 +353,17 @@ private:
 		while (firstNonZero + 1 < res.size() && res[firstNonZero] == 0)
 			++firstNonZero;
 		if (firstNonZero > 0)
-			res.erase(res.begin(), res.begin() + static_cast<long>(firstNonZero));
+			res.erase(res.begin(), res.begin() + (long)firstNonZero);
 
 		return res;
 	}
-
 
 	void addOrSubtract(const BigDecimal& other, bool isAddition) {
 		BigDecimal lhs = *this;
 		BigDecimal rhs = other;
 		alignScales(lhs, rhs);
 
-		if (!isAddition) {
-			rhs.negative = !rhs.negative;
-		}
+		if (!isAddition) rhs.negative = !rhs.negative;
 
 		if (lhs.negative == rhs.negative) {
 			digits = addVectors(lhs.digits, rhs.digits);
@@ -323,8 +400,8 @@ private:
 		res.negative = (a.negative != b.negative);
 		res.scale = a.scale + b.scale;
 
-		int n = static_cast<int>(a.digits.size());
-		int m = static_cast<int>(b.digits.size());
+		int n = (int)a.digits.size();
+		int m = (int)b.digits.size();
 		std::vector<int> tmp(n + m, 0);
 
 		for (int i = n - 1; i >= 0; --i) {
@@ -342,9 +419,10 @@ private:
 		while (firstNonZero + 1 < tmp.size() && tmp[firstNonZero] == 0)
 			++firstNonZero;
 		if (firstNonZero > 0)
-			tmp.erase(tmp.begin(), tmp.begin() + static_cast<long>(firstNonZero));
+			tmp.erase(tmp.begin(), tmp.begin() + (long)firstNonZero);
 
 		res.digits = std::move(tmp);
+
 		if (res.isZero()) {
 			res.negative = false;
 			res.scale = 0;
@@ -393,7 +471,7 @@ private:
 
 			int qDigit = 0;
 			for (int d = 9; d >= 1; --d) {
-				BigDecimal t = b * BigDecimal(d);
+				BigDecimal t = b * BigDecimal((long long)d);
 				if (compareAbs(t, current) <= 0) {
 					qDigit = d;
 					current = current - t;
@@ -411,3 +489,4 @@ private:
 		return res;
 	}
 };
+

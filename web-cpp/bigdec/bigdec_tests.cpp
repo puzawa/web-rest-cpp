@@ -12,7 +12,6 @@ namespace tests
 {
 	static bool g_verbose = false;
 
-
 	void log_ok(const std::string& msg) {
 		if (g_verbose) std::cout << "[OK] " << msg << "\n";
 	}
@@ -50,7 +49,6 @@ namespace tests
         }                                                                     \
     } while (0)
 
-
 	long double toLongDouble(const BigDecimal& x) {
 		return std::stold(x.toString());
 	}
@@ -75,6 +73,14 @@ namespace tests
         }                                                                     \
     } while (0)
 
+#define CHECK_BOOL(cond, msg)                                                 \
+    do {                                                                      \
+        if (!(cond)) {                                                        \
+            fail(std::string(msg));                                           \
+        } else {                                                              \
+            log_ok(std::string(msg));                                         \
+        }                                                                     \
+    } while (0)
 
 	std::string randomDecimalString(std::mt19937& rng) {
 		std::uniform_int_distribution<int> signDist(0, 1);
@@ -224,90 +230,6 @@ namespace tests
 		std::cout << "  OK\n";
 	}
 
-
-	void random_add_sub_mul_div_tests(unsigned int seed, int numTests) {
-		std::cout << "random_add_sub_mul_div_tests... (seed=" << seed
-			<< ", N=" << numTests << ")\n";
-
-		std::mt19937 rng(seed);
-
-		for (int i = 0; i < numTests; ++i) {
-			std::string sa = randomDecimalString(rng);
-			std::string sb = randomDecimalString(rng);
-
-			BigDecimal A(sa);
-			BigDecimal B(sb);
-
-			long double a = 0, b = 0;
-			try {
-				a = std::stold(sa);
-				b = std::stold(sb);
-			}
-			catch (...) {
-				continue;
-			}
-
-			{
-				BigDecimal C = A + B;
-				long double ref = a + b;
-				long double val = toLongDouble(C);
-				if (!almostEqual(ref, val, 1e-10L)) {
-					fail("Random add mismatch: " + sa + " + " + sb +
-						" expected " + std::to_string((double)ref) +
-						" got " + std::to_string((double)val));
-				}
-				else
-					log_ok("Random div: " + sa + " / " + sb + " got " + std::to_string((double)val));
-			}
-
-			{
-				BigDecimal C = A - B;
-				long double ref = a - b;
-				long double val = toLongDouble(C);
-				if (!almostEqual(ref, val, 1e-10L)) {
-					fail("Random sub mismatch: " + sa + " - " + sb +
-						" expected " + std::to_string((double)ref) +
-						" got " + std::to_string((double)val));
-				}
-				else
-					log_ok("Random div: " + sa + " / " + sb + " got " + std::to_string((double)val));
-			}
-
-			{
-				BigDecimal C = A * B;
-				long double ref = a * b;
-				long double val = toLongDouble(C);
-				if (!almostEqual(ref, val, 1e-10L)) {
-					fail("Random mul mismatch: " + sa + " * " + sb +
-						" expected " + std::to_string((double)ref) +
-						" got " + std::to_string((double)val));
-				}
-				else
-					log_ok("Random div: " + sa + " / " + sb + " got " + std::to_string((double)val));
-			}
-
-			if (std::fabsl(b) > 1e-18L) {
-				BigDecimal C = A / B;
-				long double ref = a / b;
-				long double val = toLongDouble(C);
-				if (!almostEqual(ref, val, 1e-9L)) {
-					fail("Random div mismatch: " + sa + " / " + sb +
-						" expected " + std::to_string((double)ref) +
-						" got " + std::to_string((double)val));
-				}
-				else
-					log_ok("Random div: " + sa + " / " + sb + " got " + std::to_string((double)val));
-
-			}
-
-			if (g_verbose && (i % 100 == 0)) {
-				std::cout << "  random test " << i << "/" << numTests << "...\n";
-			}
-		}
-
-		std::cout << "  OK\n";
-	}
-
 	void test_invalid_input() {
 		std::cout << "test_invalid_input...\n";
 
@@ -346,6 +268,279 @@ namespace tests
 		std::cout << "  OK\n";
 	}
 
+	void test_compare() {
+		std::cout << "test_compare...\n";
+
+		{
+			BigDecimal a(0ll);
+			BigDecimal b("0.5");
+
+			CHECK_BOOL(a < b, "Compare: 0ll < 0.5");
+		}
+		{
+			BigDecimal a("0");
+			BigDecimal b("0.5");
+
+			CHECK_BOOL(a < b, "Compare: 0str < 0.5");
+		}
+
+		{
+			BigDecimal a("123.45");
+			BigDecimal b("123.4500");
+
+			CHECK_BOOL(a == b, "Compare: 123.45 == 123.4500");
+			CHECK_BOOL(!(a != b), "Compare: !(123.45 != 123.4500)");
+			CHECK_BOOL(!(a < b), "Compare: 123.45 !< 123.4500");
+			CHECK_BOOL(!(a > b), "Compare: 123.45 !> 123.4500");
+			CHECK_BOOL(a <= b, "Compare: 123.45 <= 123.4500");
+			CHECK_BOOL(a >= b, "Compare: 123.45 >= 123.4500");
+		}
+
+		{
+			BigDecimal z1("0");
+			BigDecimal z2("-0.0000");
+
+			CHECK_BOOL(z1.isZero(), "Compare: z1.isZero()");
+			CHECK_BOOL(z2.isZero(), "Compare: z2.isZero()");
+			CHECK_BOOL(z1 == z2, "Compare: 0 == -0.0000");
+			CHECK_BOOL(!(z1 < z2), "Compare: 0 !< -0.0000");
+			CHECK_BOOL(!(z1 > z2), "Compare: 0 !> -0.0000");
+		}
+
+		{
+			BigDecimal p("10");
+			BigDecimal n("-10");
+
+			CHECK_BOOL(n < p, "Compare: -10 < 10");
+			CHECK_BOOL(p > n, "Compare: 10 > -10");
+			CHECK_BOOL(!(n == p), "Compare: -10 != 10");
+			CHECK_BOOL(n <= p, "Compare: -10 <= 10");
+			CHECK_BOOL(p >= n, "Compare: 10 >= -10");
+		}
+
+		{
+			BigDecimal a("999.99");
+			BigDecimal b("1000");
+
+			CHECK_BOOL(a < b, "Compare: 999.99 < 1000");
+			CHECK_BOOL(b > a, "Compare: 1000 > 999.99");
+			CHECK_BOOL(!(a == b), "Compare: 999.99 != 1000");
+			CHECK_BOOL(a <= b, "Compare: 999.99 <= 1000");
+			CHECK_BOOL(!(b <= a), "Compare: 1000 !<= 999.99");
+		}
+
+		{
+			BigDecimal x("42.0");
+
+			CHECK_BOOL(x == 42LL, "Compare LL: 42.0 == 42");
+			CHECK_BOOL(42LL == x, "Compare LL: 42 == 42.0 (reversed)");
+			CHECK_BOOL(x != 41LL, "Compare LL: 42.0 != 41");
+			CHECK_BOOL(41LL < x, "Compare LL: 41 < 42.0");
+			CHECK_BOOL(x > 41LL, "Compare LL: 42.0 > 41");
+			CHECK_BOOL(x < 43LL, "Compare LL: 42.0 < 43");
+			CHECK_BOOL(43LL > x, "Compare LL: 43 > 42.0");
+			CHECK_BOOL(x <= 42LL, "Compare LL: 42.0 <= 42");
+			CHECK_BOOL(42LL >= x, "Compare LL: 42 >= 42.0");
+		}
+
+		{
+			BigDecimal a("-5.0");
+
+			CHECK_BOOL(a == -5LL, "Compare LL neg: -5.0 == -5");
+			CHECK_BOOL(-5LL == a, "Compare LL neg: -5 == -5.0 (reversed)");
+			CHECK_BOOL(a < 0LL, "Compare LL neg: -5.0 < 0");
+			CHECK_BOOL(-10LL < a, "Compare LL neg: -10 < -5.0");
+			CHECK_BOOL(a > -10LL, "Compare LL neg: -5.0 > -10");
+		}
+
+		{
+			BigDecimal a("0.1");
+			BigDecimal b("1.5");
+			BigDecimal c("-2.25");
+
+			CHECK_BOOL(a == 0.1, "Compare dbl: 0.1 == 0.1");
+			CHECK_BOOL(0.1 == a, "Compare dbl: 0.1 == 0.1 (rev)");
+
+			CHECK_BOOL(b == 1.5, "Compare dbl: 1.5 == 1.5");
+			CHECK_BOOL(1.5 == b, "Compare dbl: 1.5 == 1.5 (rev)");
+
+			CHECK_BOOL(c == -2.25, "Compare dbl: -2.25 == -2.25");
+			CHECK_BOOL(-2.25 == c, "Compare dbl: -2.25 == -2.25 (rev)");
+		}
+
+		{
+			BigDecimal x("0.2");
+
+			CHECK_BOOL(x > 0.1, "Compare dbl: 0.2 > 0.1");
+			CHECK_BOOL(0.1 < x, "Compare dbl: 0.1 < 0.2 (rev)");
+			CHECK_BOOL(x < 0.3, "Compare dbl: 0.2 < 0.3");
+			CHECK_BOOL(0.3 > x, "Compare dbl: 0.3 > 0.2 (rev)");
+			CHECK_BOOL(x != 0.25, "Compare dbl: 0.2 != 0.25");
+			CHECK_BOOL(!(x == 0.25), "Compare dbl: !(0.2 == 0.25)");
+		}
+
+		{
+			BigDecimal big1("999999999999999999.999");
+			BigDecimal big2("1000000000000000000");
+
+			CHECK_BOOL(big1 < big2, "Compare big: 999...(999) < 1000...(000)");
+			CHECK_BOOL(big2 > big1, "Compare big: 1000...(000) > 999...(999)");
+			CHECK_BOOL(big2 == 1000000000000000000LL,
+				"Compare big vs LL: equality");
+		}
+
+		std::cout << "  OK\n";
+	}
+
+
+
+	void random_add_sub_mul_div_tests(unsigned int seed, int numTests) {
+		std::cout << "random_add_sub_mul_div_tests... (seed=" << seed
+			<< ", N=" << numTests << ")\n";
+
+		std::mt19937 rng(seed);
+
+		for (int i = 0; i < numTests; ++i) {
+			std::string sa = randomDecimalString(rng);
+			std::string sb = randomDecimalString(rng);
+
+			BigDecimal A(sa);
+			BigDecimal B(sb);
+
+			long double a = 0, b = 0;
+			try {
+				a = std::stold(sa);
+				b = std::stold(sb);
+			}
+			catch (...) {
+				continue;
+			}
+
+			{
+				BigDecimal C = A + B;
+				long double ref = a + b;
+				long double val = toLongDouble(C);
+				if (!almostEqual(ref, val, 1e-10L)) {
+					fail("Random add mismatch: " + sa + " + " + sb +
+						" expected " + std::to_string((double)ref) +
+						" got " + std::to_string((double)val));
+				}
+				else
+					log_ok("Random add: " + sa + " + " + sb + " OK");
+			}
+
+			{
+				BigDecimal C = A - B;
+				long double ref = a - b;
+				long double val = toLongDouble(C);
+				if (!almostEqual(ref, val, 1e-10L)) {
+					fail("Random sub mismatch: " + sa + " - " + sb +
+						" expected " + std::to_string((double)ref) +
+						" got " + std::to_string((double)val));
+				}
+				else
+					log_ok("Random sub: " + sa + " - " + sb + " OK");
+			}
+
+			{
+				BigDecimal C = A * B;
+				long double ref = a * b;
+				long double val = toLongDouble(C);
+				if (!almostEqual(ref, val, 1e-10L)) {
+					fail("Random mul mismatch: " + sa + " * " + sb +
+						" expected " + std::to_string((double)ref) +
+						" got " + std::to_string((double)val));
+				}
+				else
+					log_ok("Random mul: " + sa + " * " + sb + " OK");
+			}
+
+			if (std::fabsl(b) > 1e-18L) {
+				BigDecimal C = A / B;
+				long double ref = a / b;
+				long double val = toLongDouble(C);
+				if (!almostEqual(ref, val, 1e-9L)) {
+					fail("Random div mismatch: " + sa + " / " + sb +
+						" expected " + std::to_string((double)ref) +
+						" got " + std::to_string((double)val));
+				}
+				else
+					log_ok("Random div: " + sa + " / " + sb + " OK");
+			}
+
+			if (g_verbose && (i % 100 == 0)) {
+				std::cout << "  random test " << i << "/" << numTests << "...\n";
+			}
+		}
+
+		std::cout << "  OK\n";
+	}
+
+	void random_compare_tests(unsigned int seed, int numTests) {
+		std::cout << "random_compare_tests... (seed=" << seed
+			<< ", N=" << numTests << ")\n";
+
+		std::mt19937 rng(seed);
+
+		for (int i = 0; i < numTests; ++i) {
+			std::string sa = randomDecimalString(rng);
+			std::string sb = randomDecimalString(rng);
+
+			long double a = 0, b = 0;
+			try {
+				a = std::stold(sa);
+				b = std::stold(sb);
+			}
+			catch (...) {
+				continue;
+			}
+
+			BigDecimal A(sa);
+			BigDecimal B(sb);
+
+			bool eqLD = almostEqual(a, b, 1e-15L);
+			long double maxab = std::max(std::fabsl(a), std::fabsl(b));
+			if (maxab < 1.0L) maxab = 1.0L;
+
+			bool ltLD = (!eqLD && a < b);
+			bool gtLD = (!eqLD && a > b);
+
+			bool ltBD = (A < B);
+			bool gtBD = (A > B);
+			bool eqBD = (A == B);
+
+			if (eqLD) {
+				if (!eqBD || ltBD || gtBD) {
+					fail("Random cmp mismatch (expected equal): " +
+						sa + " ? " + sb +
+						" (a=" + std::to_string((double)a) +
+						", b=" + std::to_string((double)b) + ")");
+				}
+			}
+			else if (ltLD) {
+				if (!ltBD || gtBD || eqBD) {
+					fail("Random cmp mismatch (expected a < b): " +
+						sa + " ? " + sb +
+						" (a=" + std::to_string((double)a) +
+						", b=" + std::to_string((double)b) + ")");
+				}
+			}
+			else if (gtLD) {
+				if (!gtBD || ltBD || eqBD) {
+					fail("Random cmp mismatch (expected a > b): " +
+						sa + " ? " + sb +
+						" (a=" + std::to_string((double)a) +
+						", b=" + std::to_string((double)b) + ")");
+				}
+			}
+
+			if (g_verbose && (i % 200 == 0)) {
+				std::cout << "  random cmp test " << i << "/" << numTests << "...\n";
+			}
+		}
+
+		std::cout << "  OK\n";
+	}
 
 
 	int RunBigDecimalTests(bool verbose) {
@@ -360,7 +555,10 @@ namespace tests
 			test_multiplication();
 			test_division_basic();
 			test_chained_ops();
+			test_compare();
+
 			random_add_sub_mul_div_tests(seed, numRandomTests);
+			random_compare_tests(seed + 1, numRandomTests);
 		}
 		catch (const std::exception& ex) {
 			std::cerr << "Exception in tests: " << ex.what() << "\n";
