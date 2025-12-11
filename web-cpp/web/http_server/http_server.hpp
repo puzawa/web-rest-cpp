@@ -191,7 +191,6 @@ namespace http {
 
 		int socket_timeout_ms = 10000; // 10 sec
 
-		// Simple CORS
 		bool enable_cors = false;
 		std::string cors_allow_origin = "*";
 		std::string cors_allow_methods = "GET, POST, PUT, DELETE, OPTIONS, PATCH";
