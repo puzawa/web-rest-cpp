@@ -1,6 +1,7 @@
 #include "db_user_repo.hpp"
 
 bool DbUserRepository::db_ensure_connection_unlocked() {
+#ifdef USE_PQXX
 	try {
 		if (!g_db || !g_db->is_open()) {
 			g_db = std::make_unique<pqxx::connection>(g_conninfo);
@@ -12,6 +13,9 @@ bool DbUserRepository::db_ensure_connection_unlocked() {
 		g_db.reset();
 		return false;
 	}
+#else
+	return true;
+#endif
 }
 
 bool DbUserRepository::db_ensure_connection() {
@@ -20,6 +24,7 @@ bool DbUserRepository::db_ensure_connection() {
 }
 
 void DbUserRepository::init_db() {
+#ifdef USE_PQXX
 	std::lock_guard<std::mutex> lock(g_db_mutex);
 
 	if (!db_ensure_connection_unlocked()) {
@@ -60,10 +65,12 @@ void DbUserRepository::init_db() {
 		std::cerr << "DB schema init error: " << e.what() << std::endl;
 		g_db.reset();
 	}
+#endif
 }
 
 
 bool DbUserRepository::db_create_user(const std::string& login, const std::string& password) {
+#ifdef USE_PQXX
 	std::lock_guard<std::mutex> lock(g_db_mutex);
 
 	if (!db_ensure_connection_unlocked()) {
@@ -87,9 +94,14 @@ bool DbUserRepository::db_create_user(const std::string& login, const std::strin
 		std::cerr << "db_create_user error: " << e.what() << std::endl;
 		throw;
 	}
+#else 
+	return true;
+#endif
 }
 
 bool DbUserRepository::db_check_password(const std::string& login, const std::string& password) {
+#ifdef USE_PQXX
+
 	std::lock_guard<std::mutex> lock(g_db_mutex);
 
 	if (!db_ensure_connection_unlocked()) {
@@ -113,9 +125,14 @@ bool DbUserRepository::db_check_password(const std::string& login, const std::st
 		std::cerr << "db_check_password error: " << e.what() << std::endl;
 		throw;
 	}
+#else
+	return true;
+#endif
 }
 
 bool DbUserRepository::db_delete_user(const std::string& login) {
+#ifdef USE_PQXX
+
 	std::lock_guard<std::mutex> lock(g_db_mutex);
 
 	if (!db_ensure_connection_unlocked()) {
@@ -135,10 +152,15 @@ bool DbUserRepository::db_delete_user(const std::string& login) {
 		std::cerr << "db_delete_user error: " << e.what() << std::endl;
 		throw;
 	}
+#else
+	return true;
+#endif
 }
 
 
 void DbUserRepository::db_insert_dot(const std::string& login, const DotView& d) {
+#ifdef USE_PQXX
+
 	std::lock_guard<std::mutex> lock(g_db_mutex);
 
 	if (!db_ensure_connection_unlocked()) {
@@ -168,9 +190,13 @@ void DbUserRepository::db_insert_dot(const std::string& login, const DotView& d)
 		std::cerr << "db_insert_dot error: " << e.what() << std::endl;
 		throw;
 	}
+#else
+	return;
+#endif
 }
 
 std::vector<DotView> DbUserRepository::db_get_dots(const std::string& login) {
+#ifdef USE_PQXX 
 	std::lock_guard<std::mutex> lock(g_db_mutex);
 
 	if (!db_ensure_connection_unlocked()) {
@@ -208,9 +234,14 @@ std::vector<DotView> DbUserRepository::db_get_dots(const std::string& login) {
 	}
 
 	return out;
+#else
+	return {};
+#endif
 }
 
 void DbUserRepository::db_clear_dots(const std::string& login) {
+#ifdef USE_PQXX
+
 	std::lock_guard<std::mutex> lock(g_db_mutex);
 
 	if (!db_ensure_connection_unlocked()) {
@@ -231,4 +262,7 @@ void DbUserRepository::db_clear_dots(const std::string& login) {
 		std::cerr << "db_clear_dots error: " << e.what() << std::endl;
 		throw;
 	}
+#else
+	return;
+#endif
 }

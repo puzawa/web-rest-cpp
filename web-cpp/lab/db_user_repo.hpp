@@ -7,11 +7,18 @@
 #include <thread>
 #include <mutex>
 #include <queue>
+
+//#define USE_PQXX
+#ifdef USE_PQXX
 #include <pqxx/pqxx>
+#endif
 
 class DbUserRepository {
 private:
+#ifdef USE_PQXX
 	std::unique_ptr<pqxx::connection> g_db;
+#endif
+
 	std::queue<DbTask> g_db_tasks;
 	std::mutex g_db_queue_mutex;
 	std::condition_variable g_db_cv;

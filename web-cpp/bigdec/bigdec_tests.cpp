@@ -1,4 +1,4 @@
-#include "bigdec.hpp"
+	#include "bigdec.hpp"
 
 #include <iostream>
 #include <string>
@@ -54,8 +54,8 @@ namespace tests
 	}
 
 	bool almostEqual(long double a, long double b, long double relEps = 1e-12L) {
-		long double diff = std::fabsl(a - b);
-		long double maxab = std::max(std::fabsl(a), std::fabsl(b));
+		long double diff = std::fabs(a - b);
+		long double maxab = std::max(std::fabs(a), std::fabs(b));
 		if (maxab < 1.0L) maxab = 1.0L;
 		return diff <= relEps * maxab;
 	}
@@ -455,7 +455,7 @@ namespace tests
 					log_ok("Random mul: " + sa + " * " + sb + " OK");
 			}
 
-			if (std::fabsl(b) > 1e-18L) {
+			if (std::fabs(b) > 1e-18L) {
 				BigDecimal C = A / B;
 				long double ref = a / b;
 				long double val = toLongDouble(C);
@@ -499,7 +499,7 @@ namespace tests
 			BigDecimal B(sb);
 
 			bool eqLD = almostEqual(a, b, 1e-15L);
-			long double maxab = std::max(std::fabsl(a), std::fabsl(b));
+			long double maxab = std::max(std::fabs(a), std::fabs(b));
 			if (maxab < 1.0L) maxab = 1.0L;
 
 			bool ltLD = (!eqLD && a < b);
