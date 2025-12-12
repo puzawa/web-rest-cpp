@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 project(webcpp LANGUAGES CXX)
 
-# -------------------------
-# Build target
-# -------------------------
+# =========================
+# Target
+# =========================
 add_executable(webcpp
   bigdec/bigdec_tests.cpp
   json/json.cpp
@@ -25,9 +25,15 @@ target_compile_definitions(webcpp PRIVATE
   $<$<CONFIG:Release>:NDEBUG>
 )
 
-# -------------------------
-# MSVC niceties (Windows)
-# -------------------------
+# IMPORTANT: allow includes like "json/json.hpp" and "bigdec/bigdec.hpp"
+# This is the equivalent of VS $(ProjectDir) include behavior.
+target_include_directories(webcpp PRIVATE
+  "${CMAKE_CURRENT_LIST_DIR}"    # = web-cpp/
+)
+
+# =========================
+# MSVC settings (Windows)
+# =========================
 if(MSVC)
   target_compile_options(webcpp PRIVATE /W3 /permissive-)
 
@@ -37,20 +43,19 @@ if(MSVC)
   )
 endif()
 
-# -------------------------
-# Dependencies: libpqxx (preferred), fallback options
-# -------------------------
+# =========================
+# Dependencies: libpqxx
+# =========================
 option(USE_BUNDLED_LIBPQXX "Use ../deps/libpqxx (Windows-style .lib + include) instead of find_package" OFF)
 
-if(USE_BUNDLED_LIBPQXX)
-  # Your existing local deps layout (repo_root/deps/libpqxx/{include,libs})
+if(USE_BUNDLED_LIBPQXX AND WIN32)
+  # ---- Windows: your existing local deps layout (repo_root/deps/libpqxx/{include,libs}) ----
   set(REPO_ROOT "${CMAKE_CURRENT_LIST_DIR}/..")
   set(LIBPQXX_INCLUDE "${REPO_ROOT}/deps/libpqxx/include")
   set(LIBPQXX_LIBDIR  "${REPO_ROOT}/deps/libpqxx/libs")
 
   target_include_directories(webcpp PRIVATE
     "${LIBPQXX_INCLUDE}"
-    "${CMAKE_CURRENT_LIST_DIR}"  # your project dir
   )
 
   target_link_directories(webcpp PRIVATE
@@ -68,32 +73,19 @@ if(USE_BUNDLED_LIBPQXX)
     libcrypto.lib
     libssl.lib
     lz4.lib
-    # Windows system libs you had in Release
     ws2_32.lib secur32.lib crypt32.lib wldap32.lib advapi32.lib
   )
 
 else()
-  # ---- Preferred path (Windows + Linux): find_package(libpqxx CONFIG) ----
-  # Works great with vcpkg on Windows and with libpqxx built+installed via CMake.
+  # ---- Preferred: CMake config package (great for vcpkg on Windows, or source install on Linux) ----
   find_package(libpqxx CONFIG QUIET)
 
   if(libpqxx_FOUND)
     target_link_libraries(webcpp PRIVATE libpqxx::pqxx)
-
   else()
-    # ---- Linux-friendly fallback: pkg-config ----
-    # Useful if your distro's libpqxx-dev doesn't ship a CMake config package.
+    # ---- Fallback: pkg-config (common on Linux distros) ----
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(PQXX REQUIRED IMPORTED_TARGET libpqxx)
     target_link_libraries(webcpp PRIVATE PkgConfig::PQXX)
-  endif()
-
-  # Optional: If YOUR code directly uses OpenSSL/LZ4 APIs, keep these.
-  # If not, you can delete this block.
-  if(UNIX AND NOT APPLE)
-    find_package(OpenSSL QUIET)
-    if(OpenSSL_FOUND)
-      target_link_libraries(webcpp PRIVATE OpenSSL::SSL OpenSSL::Crypto)
-    endif()
   endif()
 endif()

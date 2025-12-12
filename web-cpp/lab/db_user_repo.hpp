@@ -1,6 +1,7 @@
 #pragma once
 #include "models.hpp"
 
+#include <condition_variable>
 #include <vector>
 #include <memory>
 #include <thread>
