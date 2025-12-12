@@ -121,20 +121,23 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)deps\libpqxx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)deps\libpqxx\include;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)deps\libpqxx\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>pqxx.lib;libecpg_compat.lib;libecpg.lib;libpgtypes.lib;libpq.lib;libpgcommon.lib;libpgport.lib;libcrypto.lib;libssl.lib;lz4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>pqxx.lib;libecpg_compat.lib;libecpg.lib;libpgtypes.lib;libpq.lib;libpgcommon.lib;libpgport.lib;libcrypto.lib;libssl.lib;lz4.lib;ws2_32.lib;secur32.lib;crypt32.lib;wldap32.lib;advapi32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="bigdec\bigdec_tests.cpp" />
     <ClCompile Include="json\json.cpp" />
     <ClCompile Include="json\json_tests.cpp" />
+    <ClCompile Include="lab\db_user_repo.cpp" />
+    <ClCompile Include="lab\db_user_crud.cpp" />
+    <ClCompile Include="lab\user_service.cpp" />
     <ClCompile Include="web-cpp.cpp" />
     <ClCompile Include="web\http_server\http_server.cpp" />
     <ClCompile Include="web\http_server\http_server_tests.cpp" />
@@ -143,7 +146,14 @@
   <ItemGroup>
     <ClInclude Include="bigdec\bigdec.hpp" />
     <ClInclude Include="json\json.hpp" />
+    <ClInclude Include="lab\db_user_repo.hpp" />
+    <ClInclude Include="lab\local_user_repo.hpp" />
+    <ClInclude Include="lab\models.hpp" />
+    <ClInclude Include="lab\math.hpp" />
+    <ClInclude Include="lab\user_service.hpp" />
+    <ClInclude Include="utils\utils.hpp" />
     <ClInclude Include="web\http_server\http_server.hpp" />
+    <ClInclude Include="web\http_server\http_responses.hpp" />
     <ClInclude Include="web\tcp_server\tcp_server.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
